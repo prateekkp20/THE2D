@@ -10,7 +10,7 @@ This repository contains C++/OpenMP implementations of methods for computing ele
 1. **2D-PME**, the particle mesh Ewald method for 2D-periodic systems of Kawata and Nagashima [[1](#references)], built on the 2D Ewald formulation of Kawata and Mikami [[2](#references)].
 2. **THE2D and THE2D-PME**, a new method introduced in this work. We incorporated a tophat function to eliminate the interactions in the non-periodic direction
 
-It also includes a direct 2D Ewald reference implementation and the scripts used to generate the timing and accuracy results in the paper and Supporting Information.
+It also includes a direct 2D Ewald reference implementation [[3–5](#references)] and the scripts used to generate the timing and accuracy results in the paper and Supporting Information.
 
 ---
 
@@ -34,7 +34,7 @@ It also includes a direct 2D Ewald reference implementation and the scripts used
 │   ├── realspace/                      # Results of real space poly. approx. for erfc
 │   ├── the2d-pme/                      # Parameter sweep of gamma, grid and order over THE2D-PME
 │   └── threading/                      # Results for mutli-threading and scaling of the program 
-├── inc/                                # 
+├── inc/                                # header files
 ├── run/                                # Test configuration and parameter input files
 ├── src/
 │   ├── dist.cpp                        # Minimum image convention
@@ -93,9 +93,12 @@ The '/run' folder contains the files to modify the ewald parameters: charge.in (
 
 
 ## References
-
+ 
 1. M. Kawata and U. Nagashima, "Particle mesh Ewald method for three-dimensional systems with two-dimensional periodicity," *Chem. Phys. Lett.* **340**, 165–172 (2001).
 2. M. Kawata and M. Mikami, "Rapid calculation of two-dimensional Ewald summation," *Chem. Phys. Lett.* **340**, 157–164 (2001).
+3. D. E. Parry, "The electrostatic potential in the surface region of an ionic crystal," *Surf. Sci.* **49**, 433–440 (1975). [doi:10.1016/0039-6028(75)90362-3](https://doi.org/10.1016/0039-6028(75)90362-3)
+4. D. M. Heyes, M. Barber, and J. H. R. Clarke, "Molecular dynamics computer simulation of surface properties of crystalline potassium chloride," *J. Chem. Soc., Faraday Trans. 2* **73**, 1485–1496 (1977).
+5. S. W. de Leeuw and J. W. Perram, "Electrostatic lattice sums for semi-infinite lattices," *Mol. Phys.* **37**, 1313–1322 (1979).
 
 ```bibtex
 @article{kawata2001pme2d,
@@ -116,6 +119,37 @@ The '/run' folder contains the files to modify the ewald parameters: charge.in (
   number  = {1-2},
   pages   = {157--164},
   year    = {2001}
+}
+@article{PARRY1975433,
+    title = {The electrostatic potential in the surface region of an ionic crystal},
+    journal = {Surface Science},
+    volume = {49},
+    number = {2},
+    pages = {433-440},
+    year = {1975},
+    issn = {0039-6028},
+    author = {D.E. Parry},
+    doi = {https://doi.org/10.1016/0039-6028(75)90362-3},
+}
+@article{heyes1977molecular,
+  title={Molecular dynamics computer simulation of surface properties of crystalline potassium chloride},
+  author={Heyes, DM and Barber, M and Clarke, JHR},
+  journal={Journal of the Chemical Society, Faraday Transactions 2: Molecular and Chemical Physics},
+  volume={73},
+  number={7},
+  pages={1485--1496},
+  year={1977},
+  publisher={Royal Society of Chemistry}
+}
+@article{de1979electrostatic,
+  title={Electrostatic lattice sums for semi-infinite lattices},
+  author={De Leeuw, Simon W and Perram, John W},
+  journal={Molecular Physics},
+  volume={37},
+  number={4},
+  pages={1313--1322},
+  year={1979},
+  publisher={Taylor \& Francis}
 }
 ```
 
