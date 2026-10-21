@@ -78,7 +78,7 @@ pip install numpy pandas matplotlib
 ```bash
 git clone https://github.com/prateekkp20/THE2D.git
 cd THE2D
-make clean && make            
+make clean &&  make GSL_DIR=$HOME/gsl            
 ```
 
 ---
