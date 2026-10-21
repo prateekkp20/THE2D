@@ -1,79 +1,105 @@
-CC = /usr/bin/g++	
-DEBUGFLAGS = -Wall 
-OPTFLAGS = -O3 -mavx2 -march=native -ftree-vectorize -ftree-vectorizer-verbose=1 -fopenmp -gdwarf-3 -pthread -L/home/prateekkp20/gsl/lib -I/home/prateekkp20/gsl/include # -fopt-info-missed -fopt-info-vec-optimized 
-#this needs to be changed to the location of installation of gsl in your local computer
-FFTFLAGS = -lfftw3_threads -lfftw3 -lm -lfftw3_omp
-GSLFLAGS = -lgsl -lgslcblas -lm
+# ===========================================================================
+#  Makefile for coulomb.x  (2D-PME and XYZ Ewald)
+#
+#  Usage:
+#    make                          # GSL/FFTW found automatically (system install)
+#    make GSL_DIR=$HOME/gsl        # GSL installed in a custom location
+#    make FFTW_DIR=$HOME/fftw      # FFTW installed in a custom location
+#    make DEBUG=1                  # add debug symbols (gdb / VTune)
+#    make ARCH=-mavx2              # portable build (runs on other AVX2 CPUs)
+#    make clean                    # removes obj/*.o and obj/*.d only; run/ is never touched
+# ===========================================================================
 
-RUN_DIR=./run
-RAT_OUTPUT=$(RUN_DIR)/coulomb.x
+# ---------------------------------------------------------------- compiler --
+CXX       ?= g++
+ARCH      ?= -march=native
+DEFINES    = -DDSFMT_MEXP=19937
+WARNINGS   = -Wall -Wno-unused-variable -Wno-unused-but-set-variable
 
-# Include folders
+CXXFLAGS  ?= -O3 $(ARCH) -ftree-vectorize -fopenmp -pthread
+LDFLAGS   ?= -fopenmp -pthread
 
-INC_LIST= -I ./inc \
-	#   -I/home/prateek/eigen3/
+ifeq ($(DEBUG),1)
+  CXXFLAGS += -g
+endif
 
-# Source Folders
-SRC_DIR=./src
+ifeq ($(VECREPORT),1)
+  CXXFLAGS += -fopt-info-vec-optimized
+endif
 
-#For if ./obj is not present: Types of Prerequisites (https://www.gnu.org/software/make/manual/html_node/Prerequisite-Types.html) 
-# Object folders
-OBJ_DIR=./obj
+# -------------------------------------------------------------------- GSL --
+# Uses GSL_DIR if given, otherwise asks gsl-config (system-wide install).
+ifdef GSL_DIR
+  GSL_CFLAGS := -I$(GSL_DIR)/include
+  GSL_LIBS   := -L$(GSL_DIR)/lib -Wl,-rpath,$(GSL_DIR)/lib -lgsl -lgslcblas -lm
+else
+  GSL_CFLAGS := $(shell gsl-config --cflags 2>/dev/null)
+  GSL_LIBS   := $(shell gsl-config --libs 2>/dev/null)
+endif
 
-# Library folders
-LIB_DIR=./lib
+# ------------------------------------------------------------------- FFTW --
+# Uses FFTW_DIR if given, otherwise assumes a system-wide install.
+FFTW_LINK := -lfftw3_omp -lfftw3_threads -lfftw3 -lm
+ifdef FFTW_DIR
+  FFTW_CFLAGS := -I$(FFTW_DIR)/include
+  FFTW_LIBS   := -L$(FFTW_DIR)/lib -Wl,-rpath,$(FFTW_DIR)/lib $(FFTW_LINK)
+else
+  FFTW_CFLAGS :=
+  FFTW_LIBS   := $(FFTW_LINK)
+endif
 
-# Object list
-OBJ_FILES=$(OBJ_DIR)/main.o \
-	  $(OBJ_DIR)/dist.o \
-	  $(OBJ_DIR)/dSFMT.o \
-	  $(OBJ_DIR)/func.o \
-	  $(OBJ_DIR)/print.o \
-	  $(OBJ_DIR)/real.o \
-	  $(OBJ_DIR)/reciprocal.o \
-	  $(OBJ_DIR)/self.o \
-	  $(OBJ_DIR)/reci_integral.o \
-	  $(OBJ_DIR)/reci_fftw.o \
-	  $(OBJ_DIR)/reci_0.o \
-	  $(OBJ_DIR)/screening_coeff2D.o \
-	  $(OBJ_DIR)/PM2DEwald.o \
+ifneq ($(MAKECMDGOALS),clean)
+  ifeq ($(strip $(GSL_LIBS)),)
+    $(error GSL not found. Install it (openSUSE: gsl-devel, Ubuntu: libgsl-dev) or run: make GSL_DIR=/path/to/gsl)
+  endif
+endif
 
-# Make Targets
-all:$(OBJ_FILES) output
+# ---------------------------------------------------------------- folders --
+SRC_DIR = src
+INC_DIR = inc
+OBJ_DIR = obj
+RUN_DIR = run
+TARGET  = $(RUN_DIR)/coulomb.x
 
-output:$(RAT_OUTPUT)
+INCLUDES = -I$(INC_DIR) $(GSL_CFLAGS) $(FFTW_CFLAGS)
 
-# Build object files
-$(OBJ_DIR)/main.o:$(SRC_DIR)/main.cpp
-	$(CC) -DDSFMT_MEXP=19937 -c $^ $(OPTFLAGS) -o $(OBJ_DIR)/main.o $(INC_LIST)
-$(OBJ_DIR)/func.o:$(SRC_DIR)/func.cpp
-	$(CC) -DDSFMT_MEXP=19937 -c $^ $(OPTFLAGS) -o  $(OBJ_DIR)/func.o $(INC_LIST)
-$(OBJ_DIR)/dSFMT.o:$(SRC_DIR)/dSFMT.c
-	$(CC) -DDSFMT_MEXP=19937 -c $^ $(OPTFLAGS) -o  $(OBJ_DIR)/dSFMT.o $(INC_LIST)
-$(OBJ_DIR)/print.o:$(SRC_DIR)/print.cpp
-	$(CC) -DDSFMT_MEXP=19937 -c $^ $(OPTFLAGS) -o  $(OBJ_DIR)/print.o $(INC_LIST)
-$(OBJ_DIR)/self.o:$(SRC_DIR)/self.c
-	$(CC) -DDSFMT_MEXP=19937 -c $^ $(OPTFLAGS) -o  $(OBJ_DIR)/self.o $(INC_LIST)
-$(OBJ_DIR)/dist.o:$(SRC_DIR)/dist.cpp
-	$(CC) -DDSFMT_MEXP=19937 -c $^ $(OPTFLAGS) -o  $(OBJ_DIR)/dist.o $(INC_LIST)
-$(OBJ_DIR)/real.o:$(SRC_DIR)/real.cpp
-	$(CC) -DDSFMT_MEXP=19937 -c $^ $(OPTFLAGS) -o  $(OBJ_DIR)/real.o $(INC_LIST)
-$(OBJ_DIR)/reciprocal.o:$(SRC_DIR)/reciprocal.c
-	$(CC) -DDSFMT_MEXP=19937 -c $^ $(OPTFLAGS) -o  $(OBJ_DIR)/reciprocal.o $(INC_LIST)
-$(OBJ_DIR)/reci_integral.o:$(SRC_DIR)/reci_integral.cpp
-	$(CC) -DDSFMT_MEXP=19937 -c $^ $(OPTFLAGS) -o  $(OBJ_DIR)/reci_integral.o $(INC_LIST)
-$(OBJ_DIR)/reci_0.o:$(SRC_DIR)/reci_0.cpp
-	$(CC) -DDSFMT_MEXP=19937 -c $^ $(OPTFLAGS) -o  $(OBJ_DIR)/reci_0.o $(INC_LIST)
-$(OBJ_DIR)/reci_fftw.o:$(SRC_DIR)/reci_fftw2.cpp
-	$(CC) -DDSFMT_MEXP=19937 -c $^ $(OPTFLAGS) -o  $(OBJ_DIR)/reci_fftw.o $(INC_LIST)
-$(OBJ_DIR)/screening_coeff2D.o:$(SRC_DIR)/screening_coeff2D.cpp
-	$(CC) -DDSFMT_MEXP=19937 -c $^ $(OPTFLAGS) -o  $(OBJ_DIR)/screening_coeff2D.o $(INC_LIST)
-$(OBJ_DIR)/PM2DEwald.o:$(SRC_DIR)/PM2DEwald.cpp
-	$(CC) -DDSFMT_MEXP=19937 -c $^ $(OPTFLAGS) -o  $(OBJ_DIR)/PM2DEwald.o $(INC_LIST)
+# ---------------------------------------------------------------- sources --
+# .c files are compiled as C++ (same as the original build).
+SRCS = main.cpp \
+       dist.cpp \
+       dSFMT.c \
+       func.cpp \
+       print.cpp \
+       real.cpp \
+       reciprocal.c \
+       self.c \
+       reci_integral.cpp \
+       reci_fftw2.cpp \
+       reci_0.cpp \
+       screening_coeff2D.cpp \
+       PM2DEwald.cpp
 
-$(RAT_OUTPUT):$(OBJ_FILES)
-	$(CC) $(OPTFLAGS) $(INC_LIST) -o $(RAT_OUTPUT) $(OBJ_FILES) $(FFTFLAGS) $(GSLFLAGS) $(DEBUGFLAGS)
+OBJS = $(addprefix $(OBJ_DIR)/,$(addsuffix .o,$(basename $(SRCS))))
+DEPS = $(OBJS:.o=.d)
 
-# Clean objects and library
+# ------------------------------------------------------------------ rules --
+.PHONY: all clean
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS) | $(RUN_DIR)
+	$(CXX) $(LDFLAGS) $(OBJS) -o $@ $(FFTW_LIBS) $(GSL_LIBS)
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
+	$(CXX) $(CXXFLAGS) $(WARNINGS) $(DEFINES) $(INCLUDES) -MMD -MP -c $< -o $@
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
+	$(CXX) -x c++ $(CXXFLAGS) $(WARNINGS) $(DEFINES) $(INCLUDES) -MMD -MP -c $< -o $@
+
+$(OBJ_DIR) $(RUN_DIR):
+	mkdir -p $@
+
 clean:
-	$(RM) $(OBJ_FILES)
+	$(RM) $(OBJS) $(DEPS)
+
+-include $(DEPS)
